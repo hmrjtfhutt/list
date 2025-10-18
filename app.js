@@ -466,4 +466,3 @@ auth.onAuthStateChanged(user => {
 
 // Disable checked view until signed in
 viewCheckedBtn.disabled = true;
-

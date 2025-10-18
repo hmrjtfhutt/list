@@ -495,4 +495,3 @@ a.small:hover{text-decoration:underline}
 #items .meta{margin-left:auto;font-size:0.8rem;color:#666}
 /* small responsive tweaks */
 @media (max-width:420px){.container{padding:8px}header h1{font-size:1.2rem}}
-
