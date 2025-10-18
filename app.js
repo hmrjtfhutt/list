@@ -164,25 +164,23 @@ viewCheckedBtn.addEventListener('click', () => {
 });
 closeChecked.addEventListener('click', () => checkedModal.classList.add('hidden'));
 
-// Add item with user data
+// Add item with user data and category
 addForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const text = newItemInput.value.trim();
+  const category = document.getElementById('item-category').value;
+  
   if (!text) return;
   
   if (!currentUser) { 
-    const errorBox = document.createElement('div');
-    errorBox.className = 'error-message';
-    errorBox.textContent = 'Please sign in to add items to your bucket list.';
-    addForm.insertBefore(errorBox, addForm.firstChild);
-    setTimeout(() => errorBox.remove(), 3000);
+    showError(addForm, 'Please sign in to add items to your bucket list.');
     return; 
   }
   
   try {
-    // Add item to user's collection with metadata
-    await db.collection('users').doc(currentUser.uid).collection('items').add({
+    const item = {
       text,
+      category: category === 'none' ? null : category,
       checked: false,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       createdBy: {
@@ -190,35 +188,224 @@ addForm.addEventListener('submit', async (e) => {
         email: currentUser.email,
         displayName: currentUser.displayName || null
       }
-    });
+    };
+
+    await db.collection('users').doc(currentUser.uid).collection('items').add(item);
     newItemInput.value = '';
+    document.getElementById('item-category').value = 'none';
   } catch (e) {
-    const errorBox = document.createElement('div');
-    errorBox.className = 'error-message';
-    errorBox.textContent = 'Error adding item. Please try again.';
-    addForm.insertBefore(errorBox, addForm.firstChild);
-    setTimeout(() => errorBox.remove(), 3000);
+    showError(addForm, 'Error adding item. Please try again.');
+  }
+});
+
+// Helper for showing error messages
+function showError(container, message) {
+  const errorBox = document.createElement('div');
+  errorBox.className = 'error-message';
+  errorBox.textContent = message;
+  container.insertBefore(errorBox, container.firstChild);
+  setTimeout(() => errorBox.remove(), 3000);
+}
+
+// Update UI for authentication state changes
+function updateUserUI(user) {
+  const userProfile = document.getElementById('user-profile');
+  const userName = document.getElementById('user-name');
+  const userAvatar = document.getElementById('user-avatar');
+  
+  if (user) {
+    signInBtn.style.display = 'none';
+    userProfile.classList.remove('hidden');
+    userName.textContent = user.displayName || user.email.split('@')[0];
+    userAvatar.src = user.photoURL || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(userName.textContent);
+    userAvatar.alt = userName.textContent;
+  } else {
+    signInBtn.style.display = '';
+    userProfile.classList.add('hidden');
+  }
+}
+
+// Listen for auth state changes with enhanced UI updates
+auth.onAuthStateChanged(async user => {
+  currentUser = user;
+  updateUserUI(user);
+  
+  if (user) {
+    // User is signed in
+    viewCheckedBtn.disabled = false;
+    
+    // Start real-time listener for user's items
+    if (unsubscribeItems) unsubscribeItems();
+    
+    // Get user's items collection with real-time updates
+    unsubscribeItems = db.collection('users').doc(user.uid).collection('items')
+      .orderBy('createdAt', 'asc')
+      .onSnapshot(snapshot => {
+        itemsList.innerHTML = '';
+        snapshot.docChanges().forEach(change => {
+          if (change.type === 'added') {
+            renderItem(change.doc);
+          }
+          if (change.type === 'modified') {
+            const li = document.querySelector(`li[data-id="${change.doc.id}"]`);
+            if (li) li.remove();
+            renderItem(change.doc);
+          }
+          if (change.type === 'removed') {
+            const li = document.querySelector(`li[data-id="${change.doc.id}"]`);
+            if (li) li.remove();
+          }
+        });
+      }, err => {
+        console.error('Error getting items:', err);
+        showError(itemsList.parentElement, 'Error loading items. Please refresh the page.');
+      });
+      
+  } else {
+    // User is signed out
+    viewCheckedBtn.disabled = true;
+    if (unsubscribeItems) {
+      unsubscribeItems();
+      unsubscribeItems = null;
+    }
+    itemsList.innerHTML = '';
+    
+    // Show sign-in prompt
+    const prompt = document.createElement('div');
+    prompt.className = 'sign-in-prompt';
+    prompt.innerHTML = `
+      <h3>Welcome to Bucket List</h3>
+      <p>Sign in to start tracking your dreams and goals!</p>
+    `;
+    itemsList.appendChild(prompt);
   }
 });
 
 // Render items list
+// Handle view toggling (list/grid)
+const viewBtns = document.querySelectorAll('.view-btn');
+
+viewBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    viewBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const view = btn.dataset.view;
+    itemsList.className = view + '-view';
+  });
+});
+
+// Handle category filtering
+const categoryBtns = document.querySelectorAll('.category-btn');
+let currentCategory = 'all';
+
+categoryBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.id === 'add-category') {
+      const category = prompt('Enter new category name:');
+      if (category) {
+        addNewCategory(category);
+      }
+      return;
+    }
+    categoryBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentCategory = btn.dataset.category;
+    refreshItems();
+  });
+});
+
+function addNewCategory(category) {
+  const normalized = category.toLowerCase().trim();
+  const btn = document.createElement('button');
+  btn.className = 'category-btn';
+  btn.dataset.category = normalized;
+  btn.textContent = category;
+  
+  const addBtn = document.getElementById('add-category');
+  addBtn.parentNode.insertBefore(btn, addBtn);
+  
+  const option = document.createElement('option');
+  option.value = normalized;
+  option.textContent = category;
+  document.getElementById('item-category').appendChild(option);
+}
+
 function renderItem(doc) {
   const data = doc.data();
   const li = document.createElement('li');
+  li.className = 'item-card';
   li.dataset.id = doc.id;
+  li.dataset.category = data.category || 'none';
+  
+  // Only show if matches current category filter
+  if (currentCategory !== 'all' && data.category !== currentCategory) {
+    li.style.display = 'none';
+  }
+
   const checkbox = document.createElement('input');
   checkbox.type = 'checkbox';
+  checkbox.className = 'item-checkbox';
   checkbox.checked = !!data.checked;
-  checkbox.disabled = !!data.checked; // cannot uncheck once checked
+  checkbox.disabled = !!data.checked;
 
-  const span = document.createElement('span');
-  span.textContent = data.text;
+  const content = document.createElement('div');
+  content.className = 'item-content';
+
+  const text = document.createElement('p');
+  text.className = 'item-text';
+  text.textContent = data.text;
 
   const meta = document.createElement('div');
-  meta.className = 'meta';
-  if (data.createdAt && data.createdAt.toDate) {
-    meta.textContent = new Date(data.createdAt.toDate()).toLocaleString();
+  meta.className = 'item-meta';
+  
+  // Add category tag if exists
+  if (data.category && data.category !== 'none') {
+    const category = document.createElement('span');
+    category.className = 'category-tag';
+    category.textContent = data.category;
+    meta.appendChild(category);
   }
+
+  // Add creation date
+  if (data.createdAt && data.createdAt.toDate) {
+    const date = document.createElement('span');
+    date.textContent = new Date(data.createdAt.toDate()).toLocaleDateString();
+    meta.appendChild(date);
+  }
+
+  // Add completion date if checked
+  if (data.checked && data.checkedAt && data.checkedAt.toDate) {
+    const completed = document.createElement('span');
+    completed.className = 'completed-date';
+    completed.textContent = '✓ ' + new Date(data.checkedAt.toDate()).toLocaleDateString();
+    meta.appendChild(completed);
+  }
+
+  content.appendChild(text);
+  content.appendChild(meta);
+
+  // Add delete button
+  const actions = document.createElement('div');
+  actions.className = 'item-actions';
+  
+  const deleteBtn = document.createElement('button');
+  deleteBtn.className = 'small-btn';
+  deleteBtn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>';
+  deleteBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    if (confirm('Delete this item?')) {
+      await db.collection('users').doc(currentUser.uid).collection('items').doc(doc.id).delete();
+    }
+  });
+  
+  actions.appendChild(deleteBtn);
+  
+  li.appendChild(checkbox);
+  li.appendChild(content);
+  li.appendChild(actions);
+
+  // Add to list
+  itemsList.appendChild(li);
 
   checkbox.addEventListener('change', async () => {
     if (checkbox.checked) {
