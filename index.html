@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Bucket List</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-content">
+        <h1>Bucket List</h1>
+        <nav class="main-nav">
+          <a href="#" class="nav-item active" data-view="my-list">
+            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+            My List
+          </a>
+          <a href="#" class="nav-item" data-view="feed">
+            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M16 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8l-5-5zM7 7h5v2H7V7zm10 10H7v-2h10v2zm0-4H7v-2h10v2z"/></svg>
+            Feed
+          </a>
+          <a href="#" class="nav-item" data-view="explore">
+            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 10.9c-.61 0-1.1.49-1.1 1.1s.49 1.1 1.1 1.1c.61 0 1.1-.49 1.1-1.1s-.49-1.1-1.1-1.1zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm2.19 12.19L6 18l3.81-8.19L18 6l-3.81 8.19z"/></svg>
+            Explore
+          </a>
+        </nav>
+        <div id="user-area">
+          <button id="view-checked" title="View checked items" class="icon-btn">
+            <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>
+            Completed
+          </button>
+          <div id="user-profile" class="hidden">
+            <img id="user-avatar" src="" alt="" class="avatar">
+            <div class="user-info">
+              <span id="user-name"></span>
+              <div class="user-menu">
+                <button class="menu-btn" id="profile-menu-btn">
+                  <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M7 10l5 5 5-5z"/></svg>
+                </button>
+                <div class="menu-dropdown hidden">
+                  <a href="#" id="view-profile">View Profile</a>
+                  <a href="#" id="edit-settings">Settings</a>
+                  <button id="sign-out-btn">Sign out</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button id="sign-in-btn">Sign in</button>
+        </div>
+      </div>
+      <div class="filters">
+        <div class="categories" id="category-filters">
+          <button class="category-btn active" data-category="all">All</button>
+          <button class="category-btn" data-category="travel">Travel</button>
+          <button class="category-btn" data-category="adventure">Adventure</button>
+          <button class="category-btn" data-category="personal">Personal</button>
+          <button class="category-btn" data-category="career">Career</button>
+          <button id="add-category" class="category-btn">+</button>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- My List View -->
+      <section class="card view-section" id="list-card">
+        <div class="card-header">
+          <h2>Your Dreams & Goals</h2>
+          <div class="view-toggle">
+            <button class="view-btn active" data-view="list">
+              <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+            </button>
+            <button class="view-btn" data-view="grid">
+              <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M3 3v8h8V3H3zm6 6H5V5h4v4zm-6 4v8h8v-8H3zm6 6H5v-4h4v4zm4-16v8h8V3h-8zm6 6h-4V5h4v4zm-6 4v8h8v-8h-8zm6 6h-4v-4h4v4z"/></svg>
+            </button>
+          </div>
+        </div>
+      
+      <!-- Feed View -->
+      <section class="card view-section hidden" id="feed-view">
+        <div class="card-header">
+          <h2>Your Feed</h2>
+          <div class="feed-filter">
+            <button class="filter-btn active" data-feed="following">Following</button>
+            <button class="filter-btn" data-feed="popular">Popular</button>
+          </div>
+        </div>
+        <div id="feed-container"></div>
+      </section>
+
+      <!-- Explore View -->
+      <section class="card view-section hidden" id="explore-view">
+        <div class="card-header">
+          <h2>Explore</h2>
+          <div class="search-bar">
+            <input type="search" id="explore-search" placeholder="Search users or bucket list items...">
+          </div>
+        </div>
+        <div id="explore-container"></div>
+      </section>
+
+      <!-- Profile View -->
+      <section class="card view-section hidden" id="profile-view">
+        <div class="profile-header">
+          <img id="profile-avatar" src="" alt="" class="large-avatar">
+          <div class="profile-info">
+            <h2 id="profile-name"></h2>
+            <p id="profile-bio"></p>
+            <div class="profile-stats">
+              <span class="stat"><b id="stat-items">0</b> Items</span>
+              <span class="stat"><b id="stat-completed">0</b> Completed</span>
+              <span class="stat"><b id="stat-followers">0</b> Followers</span>
+              <span class="stat"><b id="stat-following">0</b> Following</span>
+            </div>
+            <button id="follow-btn" class="hidden">Follow</button>
+          </div>
+        </div>
+        <div class="profile-content">
+          <div class="tab-buttons">
+            <button class="tab-btn active" data-tab="items">Bucket List</button>
+            <button class="tab-btn" data-tab="posts">Posts</button>
+          </div>
+          <div id="profile-items" class="tab-content"></div>
+          <div id="profile-posts" class="tab-content hidden"></div>
+        </div>
+      </section>
+
+      <!-- Settings View -->
+      <section class="card view-section hidden" id="settings-view">
+        <div class="card-header">
+          <h2>Settings</h2>
+        </div>
+        <form id="settings-form" class="settings-content">
+          <div class="form-group">
+            <label>Display Name</label>
+            <input type="text" id="settings-name">
+          </div>
+          <div class="form-group">
+            <label>Bio</label>
+            <textarea id="settings-bio"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Privacy</label>
+            <div class="checkbox-group">
+              <label>
+                <input type="checkbox" id="settings-public">
+                Make profile public
+              </label>
+              <label>
+                <input type="checkbox" id="settings-show-completed">
+                Show completed items
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Notifications</label>
+            <div class="checkbox-group">
+              <label>
+                <input type="checkbox" id="settings-email-notifications">
+                Email notifications
+              </label>
+            </div>
+          </div>
+          <button type="submit" class="primary-btn">Save Changes</button>
+        </form>
+      </section>
+        
+        <div id="items-container">
+          <ul id="items" class="list-view"></ul>
+        </div>
+
+        <form id="add-form">
+          <div class="add-form-content">
+            <input id="new-item" placeholder="Add a new bucket-list item..." autocomplete="off">
+            <select id="item-category">
+              <option value="none">No category</option>
+              <option value="travel">Travel</option>
+              <option value="adventure">Adventure</option>
+              <option value="personal">Personal</option>
+              <option value="career">Career</option>
+            </select>
+            <button type="submit" class="primary-btn">Add</button>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <div id="checked-modal" class="modal hidden">
+      <div class="modal-content">
+        <button id="close-checked">Close</button>
+        <h2>Checked Items</h2>
+        <ol id="checked-list"></ol>
+      </div>
+    </div>
+
+      <!-- Auth Modal -->
+      <div id="auth-modal" class="modal hidden">
+        <div class="modal-content auth-box">
+          <button id="auth-close">×</button>
+          <div class="auth-tabs">
+            <button id="tab-signin" class="auth-tab active">Sign In</button>
+            <button id="tab-register" class="auth-tab">Register</button>
+          </div>
+          <div id="auth-forms">
+            <form id="sign-in-form" class="auth-form">
+              <div class="form-group">
+                <label for="sign-email">Email</label>
+                <input id="sign-email" type="email" placeholder="Email" required>
+              </div>
+              <div class="form-group">
+                <label for="sign-password">Password</label>
+                <input id="sign-password" type="password" placeholder="Password" required>
+              </div>
+              <button type="submit" class="primary-btn">Sign in</button>
+              <div class="divider"><span>or</span></div>
+              <button type="button" id="google-signin" class="google-btn">Sign in with Google</button>
+            </form>
+            <form id="register-form" class="auth-form hidden">
+              <div class="form-group">
+                <label for="reg-email">Email</label>
+                <input id="reg-email" type="email" placeholder="Email" required>
+              </div>
+              <div class="form-group">
+                <label for="reg-password">Password</label>
+                <input id="reg-password" type="password" placeholder="Password" required>
+              </div>
+              <div class="form-group">
+                <label for="reg-confirm">Confirm Password</label>
+                <input id="reg-confirm" type="password" placeholder="Confirm password" required>
+              </div>
+              <button type="submit" class="primary-btn">Register</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    <!-- Firebase and app script -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+    <script src="app.js"></script>
+    <script src="social.js"></script>
+  </div>
+</body>
+</html>
