@@ -41,6 +41,46 @@ const checkedModal = document.getElementById('checked-modal');
 const closeChecked = document.getElementById('close-checked');
 const checkedList = document.getElementById('checked-list');
 
+// Navigation and views
+const navItems = document.querySelectorAll('.nav-item');
+const viewSections = document.querySelectorAll('.view-section');
+function switchView(view) {
+  viewSections.forEach(section => section.classList.add('hidden'));
+  const section = document.getElementById(view + '-view');
+  if (section) section.classList.remove('hidden');
+  navItems.forEach(nav => nav.classList.toggle('active', nav.dataset.view === view));
+  // Load content for feed/profile/explore
+  if (view === 'feed') loadFeed();
+  if (view === 'profile') loadProfile(currentUser?.uid);
+  if (view === 'explore') loadExplore();
+}
+navItems.forEach(nav => {
+  nav.addEventListener('click', e => {
+    e.preventDefault();
+    switchView(nav.dataset.view);
+  });
+});
+
+// Feed stub
+function loadFeed() {
+  const feedContainer = document.getElementById('feed-container');
+  feedContainer.innerHTML = '<div class="empty-state">Feed coming soon!</div>';
+}
+
+// Profile stub
+function loadProfile(uid) {
+  const profileName = document.getElementById('profile-name');
+  const profileBio = document.getElementById('profile-bio');
+  profileName.textContent = currentUser?.displayName || currentUser?.email || 'Profile';
+  profileBio.textContent = 'This is your profile.';
+}
+
+// Explore stub
+function loadExplore() {
+  const exploreContainer = document.getElementById('explore-container');
+  exploreContainer.innerHTML = '<div class="empty-state">Explore coming soon!</div>';
+}
+
 let currentUser = null;
 let unsubscribeItems = null;
 
@@ -394,48 +434,27 @@ function updateUserUI(user) {
 auth.onAuthStateChanged(async user => {
   currentUser = user;
   updateUserUI(user);
-  
   if (user) {
-    // User is signed in
     viewCheckedBtn.disabled = false;
-    
-    // Start real-time listener for user's items
     if (unsubscribeItems) unsubscribeItems();
-    
-    // Get user's items collection with real-time updates
     unsubscribeItems = db.collection('users').doc(user.uid).collection('items')
       .orderBy('createdAt', 'asc')
       .onSnapshot(snapshot => {
         itemsList.innerHTML = '';
-        snapshot.docChanges().forEach(change => {
-          if (change.type === 'added') {
-            renderItem(change.doc);
-          }
-          if (change.type === 'modified') {
-            const li = document.querySelector(`li[data-id="${change.doc.id}"]`);
-            if (li) li.remove();
-            renderItem(change.doc);
-          }
-          if (change.type === 'removed') {
-            const li = document.querySelector(`li[data-id="${change.doc.id}"]`);
-            if (li) li.remove();
-          }
-        });
+        snapshot.forEach(doc => renderItem(doc));
       }, err => {
         console.error('Error getting items:', err);
         showError(itemsList.parentElement, 'Error loading items. Please refresh the page.');
       });
-      
+    // Show my list view by default
+    switchView('my-list');
   } else {
-    // User is signed out
     viewCheckedBtn.disabled = true;
     if (unsubscribeItems) {
       unsubscribeItems();
       unsubscribeItems = null;
     }
     itemsList.innerHTML = '';
-    
-    // Show sign-in prompt
     const prompt = document.createElement('div');
     prompt.className = 'sign-in-prompt';
     prompt.innerHTML = `
@@ -443,6 +462,7 @@ auth.onAuthStateChanged(async user => {
       <p>Sign in to start tracking your dreams and goals!</p>
     `;
     itemsList.appendChild(prompt);
+    switchView('my-list');
   }
 });
 
